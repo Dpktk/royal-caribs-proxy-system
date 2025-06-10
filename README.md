@@ -2,6 +2,9 @@
 Single TCP Connection Proxy System for Royal Caribs
 
 ## Architecture Overview
+### System Flow Diagram
+
+```mermaid
 sequenceDiagram
     participant Browser as 🌐 Browser/Client
     participant ShipProxy as 🚢 Ship Proxy<br/>(Port 8080)
@@ -10,7 +13,7 @@ sequenceDiagram
     participant TCP as 🔗 TCP Connection<br/>(Single Persistent)
     participant ShoreProxy as 🏢 Shore Proxy<br/>(Port 9090)
     participant Internet as 🌍 Internet
-
+    
     Note over Browser, Internet: 1. Browser Request Phase
     Browser->>ShipProxy: HTTP Request<br/>(via proxy config)
     ShipProxy->>ShipProxy: LittleProxy intercepts<br/>clientToProxyRequest()
