@@ -12,76 +12,98 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "tcp.connection")
 public class TcpConnectionProperties {
 
-	private String shoreHost = "localhost";
-	private int shorePort = 9090;
-	private int responseTimeoutSeconds = 30;
-	private int connectionRetryDelaySeconds = 5;
-	private boolean keepAlive = true;
-	private boolean tcpNoDelay = true;
-	private int queuePollTimeoutSeconds = 1;
-	private int connectionManagerSleepMs = 100;
-
-	public String getShoreHost() {
-		return shoreHost;
-	}
-
-	public void setShoreHost(String shoreHost) {
-		this.shoreHost = shoreHost;
-	}
-
-	public int getShorePort() {
-		return shorePort;
-	}
-
-	public void setShorePort(int shorePort) {
-		this.shorePort = shorePort;
-	}
-
-	public int getResponseTimeoutSeconds() {
-		return responseTimeoutSeconds;
-	}
-
-	public void setResponseTimeoutSeconds(int responseTimeoutSeconds) {
-		this.responseTimeoutSeconds = responseTimeoutSeconds;
-	}
-
-	public int getConnectionRetryDelaySeconds() {
-		return connectionRetryDelaySeconds;
-	}
-
-	public void setConnectionRetryDelaySeconds(int connectionRetryDelaySeconds) {
-		this.connectionRetryDelaySeconds = connectionRetryDelaySeconds;
-	}
-
-	public boolean isKeepAlive() {
-		return keepAlive;
-	}
-
-	public void setKeepAlive(boolean keepAlive) {
-		this.keepAlive = keepAlive;
-	}
-
-	public boolean isTcpNoDelay() {
-		return tcpNoDelay;
-	}
-
-	public void setTcpNoDelay(boolean tcpNoDelay) {
-		this.tcpNoDelay = tcpNoDelay;
-	}
-
-	public int getQueuePollTimeoutSeconds() {
-		return queuePollTimeoutSeconds;
-	}
-
-	public void setQueuePollTimeoutSeconds(int queuePollTimeoutSeconds) {
-		this.queuePollTimeoutSeconds = queuePollTimeoutSeconds;
-	}
-
-	public int getConnectionManagerSleepMs() {
-		return connectionManagerSleepMs;
-	}
-
-	public void setConnectionManagerSleepMs(int connectionManagerSleepMs) {
-		this.connectionManagerSleepMs = connectionManagerSleepMs;
-	}
+	// Proxy server settings
+    private int proxyPort = 8080;
+    
+    // Shore connection settings
+    private String shoreHost = "localhost";
+    private int shorePort = 9090;
+    private int connectionTimeoutSeconds = 10;
+    private int responseTimeoutSeconds = 30;
+    private int connectionRetryDelaySeconds = 5;
+    private int connectionManagerSleepMs = 1000;
+    private int queuePollTimeoutSeconds = 5;
+    private boolean keepAlive = true;
+    private boolean tcpNoDelay = true;
+    
+    // Getters and Setters
+    public int getProxyPort() {
+        return proxyPort;
+    }
+    
+    public void setProxyPort(int proxyPort) {
+        this.proxyPort = proxyPort;
+    }
+    
+    public String getShoreHost() {
+        return shoreHost;
+    }
+    
+    public void setShoreHost(String shoreHost) {
+        this.shoreHost = shoreHost;
+    }
+    
+    public int getShorePort() {
+        return shorePort;
+    }
+    
+    public void setShorePort(int shorePort) {
+        this.shorePort = shorePort;
+    }
+    
+    public int getConnectionTimeoutSeconds() {
+        return connectionTimeoutSeconds;
+    }
+    
+    public void setConnectionTimeoutSeconds(int connectionTimeoutSeconds) {
+        this.connectionTimeoutSeconds = connectionTimeoutSeconds;
+    }
+    
+    public int getResponseTimeoutSeconds() {
+        return responseTimeoutSeconds;
+    }
+    
+    public void setResponseTimeoutSeconds(int responseTimeoutSeconds) {
+        this.responseTimeoutSeconds = responseTimeoutSeconds;
+    }
+    
+    public int getConnectionRetryDelaySeconds() {
+        return connectionRetryDelaySeconds;
+    }
+    
+    public void setConnectionRetryDelaySeconds(int connectionRetryDelaySeconds) {
+        this.connectionRetryDelaySeconds = connectionRetryDelaySeconds;
+    }
+    
+    public int getConnectionManagerSleepMs() {
+        return connectionManagerSleepMs;
+    }
+    
+    public void setConnectionManagerSleepMs(int connectionManagerSleepMs) {
+        this.connectionManagerSleepMs = connectionManagerSleepMs;
+    }
+    
+    public int getQueuePollTimeoutSeconds() {
+        return queuePollTimeoutSeconds;
+    }
+    
+    public void setQueuePollTimeoutSeconds(int queuePollTimeoutSeconds) {
+        this.queuePollTimeoutSeconds = queuePollTimeoutSeconds;
+    }
+    
+    public boolean isKeepAlive() {
+        return keepAlive;
+    }
+    
+    public void setKeepAlive(boolean keepAlive) {
+        this.keepAlive = keepAlive;
+    }
+    
+    public boolean isTcpNoDelay() {
+        return tcpNoDelay;
+    }
+    
+    public void setTcpNoDelay(boolean tcpNoDelay) {
+        this.tcpNoDelay = tcpNoDelay;
+    }
 }
