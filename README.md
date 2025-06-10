@@ -5,13 +5,14 @@ Single TCP Connection Proxy System for Royal Caribs
 ### System Flow Diagram
 
 ```mermaid
+```mermaid
 sequenceDiagram
-    participant B as 🌐 Browser/Client
-    participant SP as 🚢 Ship Proxy<br/>(Port 8080)
-    participant Q as 📋 Request Queue<br/>(Sequential)
-    participant W as ⚙️ Worker Thread<br/>(Sequential 
-    participant SH as 🏢 Shore Proxy<br/>(Port 9090)
-    participant I as 🌍 Internet
+    participant B as Browser
+    participant SP as Ship Proxy
+    participant Q as Queue
+    participant W as Worker
+    participant SH as Shore Proxy
+    participant I as Internet
 
     B->>SP: 1. HTTP Request
     SP->>Q: 2. Add to Queue
