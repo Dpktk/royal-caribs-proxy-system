@@ -12,6 +12,7 @@ public class ShoreProperties {
 	private int maxConcurrentRequests = 100;
 	private boolean enableMetrics = true;
 
+	//Getters & Setters
 	public int getTcpPort() {
 		return tcpPort;
 	}
