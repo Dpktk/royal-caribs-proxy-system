@@ -55,3 +55,4 @@ application-*.yml
 # Logs
 logs/
 spring.log
+/.metadata/

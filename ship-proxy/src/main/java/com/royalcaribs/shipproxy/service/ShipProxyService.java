@@ -8,6 +8,9 @@ import com.royacaribs.shipproxy.dto.ProxyResponse;
 import com.royalcaribs.shipproxy.config.TcpConnectionProperties;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
 import org.littleshoot.proxy.*;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import org.slf4j.Logger;
@@ -48,9 +51,16 @@ public class ShipProxyService {
 		this.properties = properties;
 		this.objectMapper = objectMapper;
 	}
+	
+    private final AtomicBoolean started = new AtomicBoolean(false);
 
 	//Start the proxy service
+	@PostConstruct
 	public void start() {
+		 if (!started.compareAndSet(false, true)) {
+	            logger.info("Ship Proxy Service already started, skipping...");
+	            return;
+	        }
 		logger.info("Starting Ship Proxy Service on port {}", properties.getProxyPort());
 
 		isRunning.set(true);
@@ -65,6 +75,7 @@ public class ShipProxyService {
 	}
 
 	//Stop the proxy service
+	@PreDestroy
 	public void stop() {
 		logger.info("Stopping Ship Proxy Service...");
 		isRunning.set(false);
