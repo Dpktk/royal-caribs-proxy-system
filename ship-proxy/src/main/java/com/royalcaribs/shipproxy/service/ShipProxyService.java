@@ -3,11 +3,13 @@ package com.royalcaribs.shipproxy.service;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.royacaribs.shipproxy.dto.ProxyRequest;
-import com.royacaribs.shipproxy.dto.ProxyResponse;
 import com.royalcaribs.shipproxy.config.TcpConnectionProperties;
+import com.royalcaribs.shipproxy.dto.ProxyRequest;
+import com.royalcaribs.shipproxy.dto.ProxyResponse;
+
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.timeout.TimeoutException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
@@ -17,11 +19,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,17 +65,40 @@ public class ShipProxyService {
 	            logger.info("Ship Proxy Service already started, skipping...");
 	            return;
 	        }
-		logger.info("Starting Ship Proxy Service on port {}", properties.getProxyPort());
+		 logger.info("🚀 Starting Ship Proxy Service on port {} (Profile: {})", 
+	               properties.getProxyPort(), getCurrentProfile());
+		 
+		 logger.info("🎯 Shore target: {}:{}", properties.getShoreHost(), properties.getShorePort());
 
 		isRunning.set(true);
 		connectToShore();
 		startSequentialProcessor();
 
-		proxyServer = DefaultHttpProxyServer.bootstrap().withPort(properties.getProxyPort())
-				.withFiltersSource(new SequentialHttpFiltersSource())
-				.start();
-
+//		proxyServer = DefaultHttpProxyServer.bootstrap().withPort(properties.getProxyPort())
+//				.withFiltersSource(new SequentialHttpFiltersSource())
+//				.start();
+		
+		try {
+		    logger.info("Starting LittleProxy with minimal config...");
+		    
+		    proxyServer = DefaultHttpProxyServer.bootstrap()
+		        .withPort(properties.getProxyPort())
+		        .withAddress(new InetSocketAddress("0.0.0.0", properties.getProxyPort()))  // Force bind to all interfaces
+		        .withFiltersSource(new SequentialHttpFiltersSource())
+		        .start();
+		    
+		    logger.info("✅ Minimal LittleProxy started on: {}", proxyServer.getListenAddress());
+		    
+		} catch (Exception e) {
+		    logger.error("❌ Even minimal proxy failed: {}", e.getMessage(), e);
+		    throw new RuntimeException("Cannot start proxy server", e);
+		}
 		logger.info("✅ Ship Proxy started on port {}", proxyServer.getListenAddress().getPort());
+	}
+	
+	// Helper method to get current profile
+	private String getCurrentProfile() {
+	    return System.getProperty("spring.profiles.active", "local");
 	}
 
 	//Stop the proxy service
@@ -106,34 +133,91 @@ public class ShipProxyService {
 			super(originalRequest);
 		}
 
-		@Override
 		public HttpResponse clientToProxyRequest(HttpObject httpObject) {
-			if (httpObject instanceof HttpRequest) {
-				HttpRequest request = (HttpRequest) httpObject;
-				String requestId = UUID.randomUUID().toString();
+		    if (httpObject instanceof HttpRequest) {
+		        HttpRequest request = (HttpRequest) httpObject;
+		        String requestId = UUID.randomUUID().toString();
 
-				logger.info("🔄 Intercepted request {}: {} {}", requestId, request.method(), request.uri());
+		        logger.info("🔄 Intercepted request {}: {} {}", requestId, request.method(), request.uri());
 
-				try {
-					CompletableFuture<ProxyResponse> future = new CompletableFuture<>();
-					RequestTask task = new RequestTask(request, requestId, future, httpObject);
+		        try {
+		            CompletableFuture<ProxyResponse> future = new CompletableFuture<>();
+		            RequestTask task = new RequestTask(request, requestId, future, httpObject);
 
-					boolean queued = requestQueue.offer(task, 100, TimeUnit.MILLISECONDS);
-					if (!queued) {
-						logger.warn("❌ Request {} queue full, rejecting", requestId);
-						return createErrorResponse("Proxy overloaded", HttpResponseStatus.SERVICE_UNAVAILABLE);
-					}
+		            boolean queued = requestQueue.offer(task, 100, TimeUnit.MILLISECONDS);
+		            if (!queued) {
+		                logger.warn("❌ Request {} queue full, rejecting", requestId);
+		                return createErrorResponse("Proxy overloaded", HttpResponseStatus.SERVICE_UNAVAILABLE);
+		            }
 
-					logger.debug("📋 Queued request {} for sequential processing", requestId);
-					return null; // Don't block - let sequential processor handle it
+		            logger.debug("📋 Queued request {} for sequential processing", requestId);
+		            
+		            // CRITICAL FIX: Wait for the response from sequential processor
+		            try {
+		                ProxyResponse proxyResponse = future.get(properties.getResponseTimeoutSeconds(), TimeUnit.SECONDS);
+		                logger.info("✅ Received response for request {}: {}", requestId, proxyResponse.getStatusCode());
+		                
+		                // Convert ProxyResponse to HttpResponse
+		                return convertToHttpResponse(proxyResponse);
+		                
+		            } catch (TimeoutException e) {
+		                logger.error("⏰ Timeout waiting for response to request {}", requestId);
+		                return createErrorResponse("Request timeout", HttpResponseStatus.GATEWAY_TIMEOUT);
+		            } catch (InterruptedException e) {
+		                Thread.currentThread().interrupt();
+		                logger.error("🛑 Interrupted waiting for response to request {}", requestId);
+		                return createErrorResponse("Request interrupted", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+		            } catch (ExecutionException e) {
+		                logger.error("❌ Error executing request {}: {}", requestId, e.getCause().getMessage());
+		                return createErrorResponse("Execution error: " + e.getCause().getMessage(), 
+		                                         HttpResponseStatus.INTERNAL_SERVER_ERROR);
+		            }
 
-				} catch (Exception e) {
-					logger.error("❌ Error processing request {}: {}", requestId, e.getMessage());
-					return createErrorResponse("Processing error: " + e.getMessage(),
-							HttpResponseStatus.INTERNAL_SERVER_ERROR);
-				}
-			}
-			return null;
+		        } catch (Exception e) {
+		            logger.error("❌ Error processing request {}: {}", requestId, e.getMessage());
+		            return createErrorResponse("Processing error: " + e.getMessage(),
+		                                     HttpResponseStatus.INTERNAL_SERVER_ERROR);
+		        }
+		    }
+		    return null;
+		}
+
+		/**
+		 * Convert ProxyResponse to LittleProxy HttpResponse
+		 */
+		private HttpResponse convertToHttpResponse(ProxyResponse proxyResponse) {
+		    try {
+		        HttpResponseStatus status = HttpResponseStatus.valueOf(proxyResponse.getStatusCode());
+		        
+		        DefaultFullHttpResponse response = new DefaultFullHttpResponse(
+		            HttpVersion.HTTP_1_1, 
+		            status,
+		            Unpooled.wrappedBuffer(proxyResponse.getBody())
+		        );
+		        
+		        // Set headers from ProxyResponse
+		        if (proxyResponse.getHeaders() != null) {
+		            proxyResponse.getHeaders().forEach((key, value) -> {
+		                try {
+		                    response.headers().set(key, value);
+		                } catch (Exception e) {
+		                    logger.debug("Skipping invalid header: {}={}", key, value);
+		                }
+		            });
+		        }
+		        
+		        // Ensure Content-Length is set
+		        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, proxyResponse.getBody().length);
+		        
+		        logger.debug("📤 Converted ProxyResponse to HttpResponse: {} bytes, status {}", 
+		                    proxyResponse.getBody().length, proxyResponse.getStatusCode());
+		        
+		        return response;
+		        
+		    } catch (Exception e) {
+		        logger.error("❌ Error converting ProxyResponse to HttpResponse: {}", e.getMessage());
+		        return createErrorResponse("Response conversion error", HttpResponseStatus.INTERNAL_SERVER_ERROR);
+		    }
 		}
 
 		//Create error HTTP response
@@ -176,6 +260,11 @@ public class ShipProxyService {
 	//Process single request sequentially
 	private void processRequestSequentially(RequestTask task) {
 		try {
+			
+//			if (true) {
+//			    logger.info("❗ Forcing exception for request {} to test client impact", task.requestId);
+//			    throw new RuntimeException("Simulated failure in processRequestSequentially()");
+//			}
 			logger.info("Processing request {} sequentially", task.requestId);
 
 			// Extract headers
