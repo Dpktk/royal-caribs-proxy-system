@@ -9,22 +9,22 @@ import org.springframework.stereotype.Component;
  */
 
 @Component
-@ConfigurationProperties(prefix = "tcp.connection")
+@ConfigurationProperties(prefix = "ship.proxy")
 public class TcpConnectionProperties {
 
 	// Proxy server settings
     private int proxyPort = 8080;
     
     // Shore connection settings
-    private String shoreHost = "localhost";
-    private int shorePort = 9090;
-    private int connectionTimeoutSeconds = 10;
-    private int responseTimeoutSeconds = 30;
-    private int connectionRetryDelaySeconds = 5;
-    private int connectionManagerSleepMs = 1000;
-    private int queuePollTimeoutSeconds = 5;
-    private boolean keepAlive = true;
-    private boolean tcpNoDelay = true;
+    private String shoreHost;
+    private int shorePort;
+    private int connectionTimeoutSeconds;
+    private int responseTimeoutSeconds;
+    private int connectionRetryDelaySeconds;
+    private int connectionManagerSleepMs;
+    private int queuePollTimeoutSeconds;
+    private boolean keepAlive;
+    private boolean tcpNoDelay;
     
     // Getters and Setters
     public int getProxyPort() {

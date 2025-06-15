@@ -118,6 +118,7 @@ public class TcpServerService {
     private synchronized void sendResponse(BufferedWriter writer, ProxyResponse response) {
         try {
             String jsonResponse = objectMapper.writeValueAsString(response);
+            logger.info("Sending response JSON: {}", jsonResponse);
             writer.write(jsonResponse);
             writer.newLine();
             writer.flush();

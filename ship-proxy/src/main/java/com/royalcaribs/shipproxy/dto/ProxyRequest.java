@@ -1,4 +1,4 @@
-package com.royacaribs.shipproxy.dto;
+package com.royalcaribs.shipproxy.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
