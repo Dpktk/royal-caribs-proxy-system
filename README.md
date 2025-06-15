@@ -1,9 +1,16 @@
 # Royal-caribs-proxy-system
 Single TCP Connection Proxy System for Royal Caribs
 
+Key Features
+- Single TCP Connection - All HTTP requests use one persistent TCP connection to minimize costs
+- Sequential Processing - Requests are processed one by one in sequence
+
 ## Published Docker Images
-- Server (Offshore Proxy): dpktk/offshore-proxy:latest
-- Client (Ship Proxy): dpktk/ship-proxy:latest
+**Server (Offshore Proxy)**  
+🔗 [dpktk/offshore-proxy:latest](https://hub.docker.com/repository/docker/dpktk/offshore-proxy)
+
+**Client (Ship Proxy)**  
+🔗 [dpktk/ship-proxy:latest](https://hub.docker.com/repository/docker/dpktk/ship-proxy)
 
 ## Service start-up steps;
 
