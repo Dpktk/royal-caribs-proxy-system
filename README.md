@@ -24,10 +24,10 @@ Key Features
 Note- The default docker bridge is not allowing hostname resolution, Hence creating a custom network so that the host can be resolved with its name.
 
 3. Run offshore-proxy first
-docker run -d --name offshore-proxy --network proxy-network -p 8081:8081 -p 9090:9090 -e SPRING_PROFILES_ACTIVE=docker dpktk/offshore-proxy:latest
+- docker run -d --name offshore-proxy --network proxy-network -p 8081:8081 -p 9090:9090 -e SPRING_PROFILES_ACTIVE=docker dpktk/offshore-proxy:latest
 
 4. Run ship-proxy (client)
-docker run -d --name ship-proxy --network proxy-network -p 8080:8080 -e SPRING_PROFILES_ACTIVE=docker dpktk/ship-proxy:latest
+- docker run -d --name ship-proxy --network proxy-network -p 8080:8080 -e SPRING_PROFILES_ACTIVE=docker dpktk/ship-proxy:latest
 
 Test Url:
 curl -x http://localhost:8080 http://httpforever.com/
