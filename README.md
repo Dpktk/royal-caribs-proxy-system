@@ -15,8 +15,8 @@ Key Features
 ## Service start-up steps;
 
 1. Pull both images from Docker Hub
-docker pull dpktk/offshore-proxy:latest
-docker pull dpktk/ship-proxy:latest
+- docker pull dpktk/offshore-proxy:latest
+- docker pull dpktk/ship-proxy:latest
 
 2. Create Docker network for communication
 docker network create proxy-network
