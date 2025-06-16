@@ -19,7 +19,7 @@ Key Features
 - docker pull dpktk/ship-proxy:latest
 
 2. Create Docker network for communication
-docker network create proxy-network
+- docker network create proxy-network
 
 Note- The default docker bridge is not allowing hostname resolution, Hence creating a custom network so that the host can be resolved with its name.
 
