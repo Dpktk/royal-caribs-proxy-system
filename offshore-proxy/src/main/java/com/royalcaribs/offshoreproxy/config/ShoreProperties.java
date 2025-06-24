@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class ShoreProperties {
 	
 	private int tcpPort = 9090;
-	private int httpClientTimeoutSeconds = 30;
+	private int httpClientTimeoutSeconds = 60;
 	private int maxConcurrentRequests = 100;
 	private boolean enableMetrics = true;
 

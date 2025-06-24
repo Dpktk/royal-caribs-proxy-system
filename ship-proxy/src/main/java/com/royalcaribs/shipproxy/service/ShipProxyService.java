@@ -65,10 +65,10 @@ public class ShipProxyService {
 	            logger.info("Ship Proxy Service already started, skipping...");
 	            return;
 	        }
-		 logger.info("🚀 Starting Ship Proxy Service on port {} (Profile: {})", 
+		 logger.info("Starting Ship Proxy Service on port {} (Profile: {})", 
 	               properties.getProxyPort(), getCurrentProfile());
 		 
-		 logger.info("🎯 Shore target: {}:{}", properties.getShoreHost(), properties.getShorePort());
+		 logger.info(" Shore target: {}:{}", properties.getShoreHost(), properties.getShorePort());
 
 		isRunning.set(true);
 		connectToShore();
@@ -87,13 +87,13 @@ public class ShipProxyService {
 		        .withFiltersSource(new SequentialHttpFiltersSource())
 		        .start();
 		    
-		    logger.info("✅ Minimal LittleProxy started on: {}", proxyServer.getListenAddress());
+		    logger.info(" Minimal LittleProxy started on: {}", proxyServer.getListenAddress());
 		    
 		} catch (Exception e) {
-		    logger.error("❌ Even minimal proxy failed: {}", e.getMessage(), e);
+		    logger.error("Even minimal proxy failed: {}", e.getMessage(), e);
 		    throw new RuntimeException("Cannot start proxy server", e);
 		}
-		logger.info("✅ Ship Proxy started on port {}", proxyServer.getListenAddress().getPort());
+		logger.info("Ship Proxy started on port {}", proxyServer.getListenAddress().getPort());
 	}
 	
 	// Helper method to get current profile
@@ -115,7 +115,7 @@ public class ShipProxyService {
 		}
 		closeShoreConnection();
 
-		logger.info("✅ Ship Proxy Service stopped");
+		logger.info("Ship Proxy Service stopped");
 	}
 
 	//Sequential HTTP Filters Source
@@ -138,43 +138,55 @@ public class ShipProxyService {
 		        HttpRequest request = (HttpRequest) httpObject;
 		        String requestId = UUID.randomUUID().toString();
 
-		        logger.info("🔄 Intercepted request {}: {} {}", requestId, request.method(), request.uri());
+		        logger.info("Intercepted request {}: {} {}", requestId, request.method(), request.uri());
 
 		        try {
 		            CompletableFuture<ProxyResponse> future = new CompletableFuture<>();
-		            RequestTask task = new RequestTask(request, requestId, future, httpObject);
+		            
+		            byte[] requestBody = new byte[0];
+		            if(httpObject instanceof FullHttpRequest) {
+		            	FullHttpRequest fullRequest = (FullHttpRequest) httpObject;
+		            	
+		            	if(fullRequest.content().readableBytes() > 0) {
+		            		requestBody = new byte[fullRequest.content().readableBytes()];
+		            		fullRequest.content().readBytes(requestBody);
+		            		fullRequest.content().resetReaderIndex();
+		            	}
+		            }
+		            
+		            RequestTask task = new RequestTask(request, requestId, future, httpObject, requestBody);
 
 		            boolean queued = requestQueue.offer(task, 100, TimeUnit.MILLISECONDS);
 		            if (!queued) {
-		                logger.warn("❌ Request {} queue full, rejecting", requestId);
+		                logger.warn("Request {} queue full, rejecting", requestId);
 		                return createErrorResponse("Proxy overloaded", HttpResponseStatus.SERVICE_UNAVAILABLE);
 		            }
 
-		            logger.debug("📋 Queued request {} for sequential processing", requestId);
+		            logger.debug("Queued request {} for sequential processing", requestId);
 		            
 		            // CRITICAL FIX: Wait for the response from sequential processor
 		            try {
 		                ProxyResponse proxyResponse = future.get(properties.getResponseTimeoutSeconds(), TimeUnit.SECONDS);
-		                logger.info("✅ Received response for request {}: {}", requestId, proxyResponse.getStatusCode());
+		                logger.info("Received response for request {}: {}", requestId, proxyResponse.getStatusCode());
 		                
 		                // Convert ProxyResponse to HttpResponse
 		                return convertToHttpResponse(proxyResponse);
 		                
 		            } catch (TimeoutException e) {
-		                logger.error("⏰ Timeout waiting for response to request {}", requestId);
+		                logger.error("Timeout waiting for response to request {}", requestId);
 		                return createErrorResponse("Request timeout", HttpResponseStatus.GATEWAY_TIMEOUT);
 		            } catch (InterruptedException e) {
 		                Thread.currentThread().interrupt();
-		                logger.error("🛑 Interrupted waiting for response to request {}", requestId);
+		                logger.error("Interrupted waiting for response to request {}", requestId);
 		                return createErrorResponse("Request interrupted", HttpResponseStatus.INTERNAL_SERVER_ERROR);
 		            } catch (ExecutionException e) {
-		                logger.error("❌ Error executing request {}: {}", requestId, e.getCause().getMessage());
+		                logger.error("Error executing request {}: {}", requestId, e.getCause().getMessage());
 		                return createErrorResponse("Execution error: " + e.getCause().getMessage(), 
 		                                         HttpResponseStatus.INTERNAL_SERVER_ERROR);
 		            }
 
 		        } catch (Exception e) {
-		            logger.error("❌ Error processing request {}: {}", requestId, e.getMessage());
+		            logger.error("Error processing request {}: {}", requestId, e.getMessage());
 		            return createErrorResponse("Processing error: " + e.getMessage(),
 		                                     HttpResponseStatus.INTERNAL_SERVER_ERROR);
 		        }
@@ -209,13 +221,13 @@ public class ShipProxyService {
 		        // Ensure Content-Length is set
 		        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, proxyResponse.getBody().length);
 		        
-		        logger.debug("📤 Converted ProxyResponse to HttpResponse: {} bytes, status {}", 
+		        logger.debug("Converted ProxyResponse to HttpResponse: {} bytes, status {}", 
 		                    proxyResponse.getBody().length, proxyResponse.getStatusCode());
 		        
 		        return response;
 		        
 		    } catch (Exception e) {
-		        logger.error("❌ Error converting ProxyResponse to HttpResponse: {}", e.getMessage());
+		        logger.error("Error converting ProxyResponse to HttpResponse: {}", e.getMessage());
 		        return createErrorResponse("Response conversion error", HttpResponseStatus.INTERNAL_SERVER_ERROR);
 		    }
 		}
@@ -234,7 +246,7 @@ public class ShipProxyService {
 	//Start sequential processor thread
 	private void startSequentialProcessor() {
 		sequentialProcessor = new Thread(() -> {
-			logger.info("🔄 Sequential request processor started");
+			logger.info(" Sequential request processor started");
 
 			while (isRunning.get() || !requestQueue.isEmpty()) {
 				try {
@@ -250,7 +262,7 @@ public class ShipProxyService {
 				}
 			}
 
-			logger.info("✅ Sequential request processor stopped");
+			logger.info("Sequential request processor stopped");
 		}, "sequential-processor");
 
 		sequentialProcessor.setDaemon(false);
@@ -273,7 +285,7 @@ public class ShipProxyService {
 
 			// Create proxy request
 			ProxyRequest proxyRequest = new ProxyRequest(task.requestId, task.httpRequest.method().name(),
-					task.httpRequest.uri(), headers, new byte[0], System.currentTimeMillis());
+					task.httpRequest.uri(), headers, task.requestBody, System.currentTimeMillis());
 
 			// Send to shore via TCP
 			synchronized (connectionLock) {
@@ -291,12 +303,12 @@ public class ShipProxyService {
 				ProxyResponse response = objectMapper.readValue(responseJson, ProxyResponse.class);
 				task.future.complete(response);
 
-				logger.info("📥 Received response for request {} with status {}", task.requestId,
+				logger.info("Received response for request {} with status {}", task.requestId,
 						response.getStatusCode());
 			}
 
 		} catch (Exception e) {
-			logger.error("❌ Failed to process request {}: {}", task.requestId, e.getMessage());
+			logger.error("Failed to process request {}: {}", task.requestId, e.getMessage());
 			
 			ProxyResponse errorResponse = ProxyResponse.error(task.requestId, 500, 
 					"TCP communication error: " + e.getMessage());
@@ -324,11 +336,11 @@ public class ShipProxyService {
 				writer = new PrintWriter(new OutputStreamWriter(shoreSocket.getOutputStream()), true);
 				reader = new BufferedReader(new InputStreamReader(shoreSocket.getInputStream()));
 
-				logger.info("🔗 Connected to shore proxy at {}:{}", properties.getShoreHost(),
+				logger.info(" Connected to shore proxy at {}:{}", properties.getShoreHost(),
 						properties.getShorePort());
 			}
 		} catch (Exception e) {
-			logger.error("❌ Failed to connect to shore: {}", e.getMessage());
+			logger.error(" Failed to connect to shore: {}", e.getMessage());
 			closeShoreConnection();
 		}
 	}
@@ -342,7 +354,7 @@ public class ShipProxyService {
 
 	//Reconnect to shore
 	private void reconnectToShore() {
-		logger.warn("🔄 Reconnecting to shore proxy...");
+		logger.warn(" Reconnecting to shore proxy...");
 		closeShoreConnection();
 
 		for (int attempt = 1; attempt <= 3; attempt++) {
@@ -350,7 +362,7 @@ public class ShipProxyService {
 				Thread.sleep(properties.getConnectionRetryDelaySeconds() * 1000L);
 				connectToShore();
 				if (shoreSocket != null && shoreSocket.isConnected()) {
-					logger.info("✅ Reconnected to shore proxy successfully");
+					logger.info("Reconnected to shore proxy successfully");
 					return;
 				}
 			} catch (Exception e) {
@@ -358,7 +370,7 @@ public class ShipProxyService {
 			}
 		}
 
-		logger.error("❌ Failed to reconnect to shore proxy after 3 attempts");
+		logger.error("Failed to reconnect to shore proxy after 3 attempts");
 	}
 
 	//Close shore connection
@@ -389,13 +401,15 @@ public class ShipProxyService {
 		final String requestId;
 		final CompletableFuture<ProxyResponse> future;
 		final HttpObject httpObject;
+		  final byte[] requestBody; 
 
 		RequestTask(HttpRequest httpRequest, String requestId, CompletableFuture<ProxyResponse> future,
-				HttpObject httpObject) {
+				HttpObject httpObject, byte[] requestBody) {
 			this.httpRequest = httpRequest;
 			this.requestId = requestId;
 			this.future = future;
 			this.httpObject = httpObject;
+			this.requestBody = requestBody;
 		}
 	}
 }

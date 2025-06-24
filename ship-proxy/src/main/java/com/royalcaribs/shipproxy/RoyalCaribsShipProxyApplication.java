@@ -28,20 +28,20 @@ private final ShipProxyService shipProxyService;
 
 	@Override
 	public void run(String... args) throws Exception {
-		 logger.info("🚢 Starting Royal Caribs Ship Proxy with LittleProxy");
+		 logger.info("Starting Royal Caribs Ship Proxy with LittleProxy");
 	        
-	        // Start the proxy service
+	        // Starting the proxy service
 	        shipProxyService.start();
 	        
-	        // Keep application running
+	        // Keeps application running
 	        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-	            logger.info("🛑 Shutting down Ship Proxy...");
+	            logger.info("Shutting down Ship Proxy...");
 	            shipProxyService.stop();
 	        }));
 	        
-	        logger.info("✅ Ship Proxy is running. Configure your browser proxy to: localhost:8080");
+	        logger.info("Ship Proxy is running. Configure browser proxy to: localhost:8080");
 	        
-	        // Keep main thread alive
+	        // Keeping main thread alive
 	        Thread.currentThread().join();
 	    }
 
