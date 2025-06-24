@@ -1,5 +1,37 @@
-# royal-caribs-proxy-system
+# Royal-caribs-proxy-system
 Single TCP Connection Proxy System for Royal Caribs
+
+Key Features
+- Single TCP Connection - All HTTP requests use one persistent TCP connection to minimize costs
+- Sequential Processing - Requests are processed one by one in sequence
+
+## Published Docker Images
+**Server (Offshore Proxy)**  
+🔗 [dpktk/offshore-proxy:latest](https://hub.docker.com/repository/docker/dpktk/offshore-proxy)
+
+**Client (Ship Proxy)**  
+🔗 [dpktk/ship-proxy:latest](https://hub.docker.com/repository/docker/dpktk/ship-proxy)
+
+## Service start-up steps;
+
+1. Pull both images from Docker Hub
+- docker pull dpktk/offshore-proxy:latest
+- docker pull dpktk/ship-proxy:latest
+
+2. Create Docker network for communication
+- docker network create proxy-network
+
+Note- The default docker bridge is not allowing hostname resolution, Hence creating a custom network so that the host can be resolved with its name.
+
+3. Run offshore-proxy first
+- docker run -d --name offshore-proxy --network proxy-network -p 8081:8081 -p 9090:9090 -e SPRING_PROFILES_ACTIVE=docker dpktk/offshore-proxy:latest
+
+4. Run ship-proxy (client)
+- docker run -d --name ship-proxy --network proxy-network -p 8080:8080 -e SPRING_PROFILES_ACTIVE=docker dpktk/ship-proxy:latest
+
+Test Url:
+curl -x http://localhost:8080 http://httpforever.com/
+
 
 ## Architecture Overview
 ### System Flow Diagram
